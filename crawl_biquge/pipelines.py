@@ -72,13 +72,14 @@ class CrawlBiqugePipeline(object):
 		
 class TestPipeline(object):
 
-	# db:数据连接  cursor:游标
+	# db:数据连接 cursor:游标 datalist:缓冲池
 	db = ''
 	cursor = ''
+	datalist = []
+
 
 	# 爬虫开始时执行
 	def open_spider(self, spider):
-		print("当前管道：TestPipeline")
 		try:
 			# 创建连接
 			self.db = pymysql.connect(
@@ -88,7 +89,7 @@ class TestPipeline(object):
 				password = "Xiaogu971113",	# 用户密码
 				database = "test",			# 数据库名称
 				charset = "utf8"			# 字符集
-				)
+			)
 			print('数据库连接成功！')
 
 			# 创建游标
@@ -109,27 +110,58 @@ class TestPipeline(object):
 			`chapter_title` varchar(255) not null,
 			`chapter_content` text not null,
 			`sort` int(11),
+			`get_chapter_content_time` datetime,
 			primary key (`novel_id`)
 		) engine=innodb default charset=utf8
 		"""
 		self.cursor.execute(sql)
 
+
 	# 爬虫关闭时执行
 	def close_spider(self, spider):
-		# 关闭连接
+		# 爬虫关闭时 如果还有数据 将剩余的数据入库
+		if len(self.datalist) > 0:
+			# 数据入库
+			self.bulk_insert_to_mysql(self.datalist)
+			# 清空缓冲池
+			del self.datalist[:]
+
+		# 关闭数据库连接
 		self.cursor.close()
 		self.db.close()
 		print('关闭连接')
 
-	def process_item(self, item, spider):
-		# 数据入库
-		sql = """
-		insert into testData(novel_name, novel_auther, novel_profile, novel_cover, novel_type, chapter_title, chapter_content, sort) value("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s")
-		""" % (item['novel_name'], item['novel_auther'], item['novel_profile'], item['novel_cover'], item['novel_type'], item['chapter_title'], item['chapter_content'], item['sort'])
 
+	def process_item(self, item, spider):
+		# 数据放入缓冲池
+		self.datalist.append([
+			item['novel_name'], 
+			item['novel_auther'],
+			item['novel_profile'], 
+			item['novel_cover'],
+			item['novel_type'], 
+			item['chapter_title'],
+			item['chapter_content'], 
+			item['sort'],
+			item['get_chapter_content_time']
+		])
+
+		# 每一百条数据 入一次数据库
+		if len(self.datalist) == 100:
+			# 数据入库
+			self.bulk_insert_to_mysql(self.datalist)
+			# 清空缓冲池
+			del self.datalist[:]
+
+		return item
+
+
+	# 批量插入mysql数据库
+	def bulk_insert_to_mysql(self, bulkdata):
 		try:
-			self.cursor.execute(sql);
+			print("the length of the data-------%s" %len(self.datalist))
+			sql = "insert into testData (novel_name, novel_auther, novel_profile, novel_cover, novel_type, chapter_title, chapter_content, sort, get_chapter_content_time) values(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+			self.cursor.executemany(sql, bulkdata)
 			self.db.commit()
-			print("入库成功--小说名称：", item['novel_name'], "--小说章节：", item['chapter_title'])
-		except Exception as e:
-			print("错误在这里>>>>>>>>>>>>>",e,"<<<<<<<<<<<<<错误在这里")
+		except:
+			self.db.rollback()

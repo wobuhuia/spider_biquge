@@ -2,6 +2,7 @@
 import os
 import scrapy 
 from crawl_biquge.items import TestItem
+import datetime
 
 class NovelSpider(scrapy.Spider):
 	# 爬虫名称
@@ -15,6 +16,7 @@ class NovelSpider(scrapy.Spider):
     custom_settings = {
         'ITEM_PIPELINES': {'crawl_biquge.pipelines.TestPipeline': 300, }
     }
+
 
     # 解析html获取所需的数据
     def parse(self, response):
@@ -31,6 +33,7 @@ class NovelSpider(scrapy.Spider):
             # 进入 小说详情页
             yield scrapy.Request(novelurl, callback=self.novelInfo)
     
+
     # 抓取小说详情页数据
     def novelInfo(self, response):
 
@@ -64,9 +67,15 @@ class NovelSpider(scrapy.Spider):
 
             yield scrapy.Request(chapter_content_url, meta={'item': item}, callback=self.getChatper)
 
+
     # 获取小说章节内容
     def getChatper(self, response):
+        # 获取章节内容
         item = response.meta['item']
         item['chapter_content'] = response.xpath('//div[@id="content"]/text()').extract()[0]
+
+        # 获取章节内容的时间
+        now = datetime.datetime.now()
+        item['get_chapter_content_time'] = '{}-{}-{} {}:{}:{}'.format(now.year, now.month, now.day, now.hour, now.minute, now.second)
 
         yield item

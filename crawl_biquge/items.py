@@ -33,3 +33,4 @@ class TestItem(scrapy.Item):
 	novel_type = scrapy.Field()		# 小说分类
 	chapter_title = scrapy.Field()		# 章节标题
 	chapter_content = scrapy.Field()	# 章节内容
+	get_chapter_content_time = scrapy.Field() #获取章节内容的时间
