@@ -3,9 +3,6 @@ import os
 import scrapy 
 from crawl_biquge.items import TestItem
 
-# 项目文件所在位置
-# /d/study/code/python/crawler/crawl_biquge/crawl_biquge
-
 class NovelSpider(scrapy.Spider):
 	# 爬虫名称
     name = 'novel'
@@ -23,9 +20,8 @@ class NovelSpider(scrapy.Spider):
     def parse(self, response):
 
         # 获取所有小说名字 以及详情页连接
-        # 
-        # //div[@id="main"]/div[@class="novellist"]/ul/li
-        # //div[@id="main"]/div[@class="novellist"][1]/ul/li[1]
+        # //div[@id="main"]/div[@class="novellist"]/ul/li 所有小说名称
+        # //div[@id="main"]/div[@class="novellist"][1]/ul/li[1] 第一个小说名称
         novellist = response.xpath('//div[@id="main"]/div[@class="novellist"]/ul/li');
         for novel in novellist:
 
