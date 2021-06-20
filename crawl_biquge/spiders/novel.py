@@ -17,6 +17,9 @@ class NovelSpider(scrapy.Spider):
         'ITEM_PIPELINES': {'crawl_biquge.pipelines.TestPipeline': 300, }
     }
 
+    # 暂停爬虫
+    jobdir = 'jobdir_novel_stop'
+
 
     # 解析html获取所需的数据
     def parse(self, response):
