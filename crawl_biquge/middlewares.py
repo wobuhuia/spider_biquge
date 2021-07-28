@@ -5,8 +5,11 @@
 # See documentation in:
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
-from scrapy import signals
 
+import scrapy
+from scrapy import signals
+from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+import random
 
 class CrawlBiqugeSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
@@ -87,6 +90,7 @@ class CrawlBiqugeDownloaderMiddleware(object):
         # - return a Response object
         # - return a Request object
         # - or raise IgnoreRequest
+
         return response
 
     def process_exception(self, request, exception, spider):
@@ -101,3 +105,19 @@ class CrawlBiqugeDownloaderMiddleware(object):
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+#设置User-Agent
+class MyUserAgentMiddleware(UserAgentMiddleware):
+    def __init__(self, user_agent):
+        self.user_agent = user_agent
+
+    @classmethod
+    def from_crawler(cls, crawler):
+
+        return cls(
+                user_agent = crawler.settings.get('USER_AGENT_LIST')
+            )
+
+    def process_request(self, request, spider):
+        user_agent = random.choice(self.user_agent);
+        request.headers.setdefault('User-Agent', user_agent)
